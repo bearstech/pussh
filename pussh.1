@@ -1,21 +1,95 @@
-Usage: $0 [options] command args ...
+.\" Yes, this man page is handcrafted.
+.TH TR "1" "May 2013" "pussh" "User Commands"
 
-Options:
-  -f, --from-file <file>   connect to hosts listed in file, one per line.
-                           Special file '-' may be used for stdin
-  -h, --hosts <host,...>   connect to hosts. Several -h options may be used
-  -i, --input <input>      feed a file (%h to split by host, -i in/%h.txt)
-                           or a command to remote stdin (-i 'tar -czC in/%h|')
-  -l, --login <user>       remote login name; shortcut for -s '-l <user>'
-  -n, --dry-run            dry run: don't run commands, only print what would
-                           be done
-  -o, --output <output>    output to a file (%h to split by host, -o out/%h.txt),
-                           or to a command ( -o '|tar -xzC out/%h')
-  -q, --quiet              quiet: don't stamp (prefix) stdout and stderr, do
-                           not report total hosts and time
-  -r, --rate               connect rate in new SSH connections/sec (default: 10)
-  -s, --ssh-opt <options>  pass options to SSH, eg -s '-x -p 2022'
-  -u, --upload             upload the command file and run its copy remotely
+.SH NAME
+pussh \- parallel ssh, run a shell snippet or a whole program quickly on many hosts
 
-  --help                   display this help and exit
-  --version                output version information and exit
+.SH SYNOPSIS
+.B pussh
+[\fIOPTION\fR]... \fICOMMAND \fR[\fIARGS\fR]...
+
+.SH DESCRIPTION
+.PP
+pussh takes a host list and a shell snippet or a whole program, then run it in
+batch mode on all hosts and return their output. It adds facilities to pipe
+file or commands to every command's input and/or output. It is meant to be a
+natural extension to the SSH batch mode (eg.: in | sh "command args ..." |
+out), although having many inputs and outputs does not let you use pipes the
+same way; you will have to decide how to multiplex those inputs and outputs,
+which should hopefully be easy.
+
+.SH OPTIONS
+.TP
+\fB-f\fR, \fB--from-file\fR FILE
+connect to hosts listed in FILE, one per line.  Special file '-' may be used
+for stdin
+.TP
+\fB-h\fR, \fB--hosts\fR HOST,...
+connect to hosts. Several -h options may be used
+.TP
+\fB-i\fR, \fB--input\fR INPUT
+feed a file (%h to split by host, -i in/%h.txt) or a command to remote stdin
+(-i 'tar -czC in/%h|')
+.TP
+\fB-l\fR, \fB--login\fR USER
+remote login name; shortcut for -s '-l USER'
+.TP
+\fB-n\fR, \fB--dry-run\fR
+dry run: don't run commands, only print what would be done
+.TP
+\fB-o\fR, \fB--output\fR OUTPUT
+output to a file (%h to split by host, -o out/%h.txt), or to a command
+(-o '|tar -xzC out/%h')
+.TP
+\fB-q\fR, \fB--quiet\fR
+quiet: don't stamp (prefix) stdout and stderr, do not report total hosts and
+time
+.TP
+\fB-r\fR, \fB--rate\fR RATE
+connect rate in new SSH connections/sec (default: 10)
+.TP
+\fB-s\fR, \fB--ssh-opt\fR OPTIONS
+pass OPTIONS to SSH, eg. -s '-x -p 2022'
+.TP
+\fB-u\fR, \fB--upload\fR
+upload the command file and run its copy remotely
+.TP
+\fB--help\fR
+display this help and exit
+.TP
+\fB--version\fR
+output version information and exit
+
+.SH EXAMPLES
+.PP
+Show all servers rootfs usage in descending order :
+.IP
+pussh -f servers df -h / |grep /dev |sort -rn -k5
+.PP
+Count the number of processors in a cluster :
+.IP
+pussh -f servers grep ^processor /proc/cpuinfo |wc -l
+.PP
+Show the processor models, sorted by occurence :
+.IP
+pussh -f servers sed -ne "s/^model name.*: //p" /proc/cpuinfo |sort |uniq -c
+.PP
+Fetch a list of installed package in one file per host :
+.IP
+pussh -f servers -o packages-for-%h dpkg --get-selections
+
+.SH AUTHOR
+Written by Vincent Caron <vcaron@bearstech.com>.
+
+.SH "REPORTING BUGS"
+Report pussh bugs via https://github.com/bearstech/pussh/issues
+
+.SH COPYRIGHT
+Copyright \(co 2011,2012 Bearstech
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH "SEE ALSO"
+The project home page at https://github.com/bearstech/pussh
