@@ -1,0 +1,21 @@
+Source: pussh
+Section: admin
+Priority: extra
+Maintainer: Vincent CARON <vcaron@bearstech.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: https://github.com/bearstech/pussh
+#Vcs-Git: git://github.com/bearstech/pussh.git
+#Vcs-Browser: https://github.com/bearstech/pussh
+
+Package: pussh
+Architecture: all
+Depends: ${misc:Depends}, ssh-client
+Description: parallel ssh, run a shell snippet or a whole program quickly on many hosts
+ pussh takes a host list and a shell snippet or a whole program, then run it in
+ batch mode on all hosts and return their output. It adds facilities to pipe
+ file or commands to every command's input and/or output. It is meant to be a
+ natural extension to the SSH batch mode (eg.: in | sh "command args ..." |
+ out), although having many inputs and outputs does not let you use pipes the
+ same way; you will have to decide how to multiplex those inputs and outputs,
+ which should hopefully be easy.
