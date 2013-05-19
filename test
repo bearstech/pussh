@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Copyright (C) 2011,2012 Bearstech - http://bearstech.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# This is a trivial test harness : command to run, expected exit status,
+# expected stdout (extended regex), expected stderr (extended regex), and
+# a custom optional test (a shell fragment).
+#
+# Only non-empty fields are checked.
+#
+# Use .test-* files for input, they will be cleaned out for you.
+#
+assert() {
+  cmd="$1"
+  ex="$2"
+  out="$3"
+  err="$4"
+  more="$5"
+
+  eval "$cmd" >.test-stdout 2>.test-stderr
+  status=$?
+
+  if [ -n "$ex" -a "$ex" -ne $status ]; then
+    echo "FAIL: $cmd: expected status $ex, got $status"
+    let failed=$failed+1
+  fi
+
+  if [ -n "$out" ] && ! grep -qE "$out" .test-stdout; then
+    echo "FAIL: $cmd: expected '$out' in stdout"
+    let failed=$failed+1
+  fi
+
+  if [ -n "$err" ] && ! grep -qE "$err" .test-stderr; then
+    echo "FAIL: $cmd: expected '$err' in stdout"
+    let failed=$failed+1
+  fi
+
+  if [ -n "$more" ] && ! eval "$more"; then
+    echo "FAIL: $cmd: '$more' custom test failed"
+    let failed=$failed+1
+  fi
+
+  rm -f .test-*
+}
+
+pussh=./pussh
+
+assert "$pussh"           1 '' 'missing command'
+assert "$pussh --help"    0 '^Usage:'
+assert "$pussh --version" 0 '^pussh [0-9]'
+
+# Basic usage (-h/--hosts, -q/--quiet)
+assert "$pussh -h      localhost echo _TEST_"    0 '^localhost: _TEST_'
+assert "$pussh --hosts localhost echo _TEST_"    0 '^localhost: _TEST_'
+assert "$pussh -q      -h localhost echo _TEST_" 0 '^_TEST_'
+assert "$pussh --quiet -h localhost echo _TEST_" 0 '^_TEST_'
+
+# -r/--rate
+assert "$pussh -q -h localhost -r     100 echo _TEST_" 0 '^_TEST_'
+assert "$pussh -q -h localhost --rate 100 echo _TEST_" 0 '^_TEST_'
+
+# -s/--ssh-opt
+assert "$pussh -q -h localhost -s        '-p22' echo _TEST_" 0 '^_TEST_'
+assert "$pussh -q -h localhost --ssh-opt '-p22' echo _TEST_" 0 '^_TEST_'
+
+# -l/--login
+assert "$pussh -q -h localhost -l      $LOGNAME echo _TEST_" 0 '^_TEST_'
+assert "$pussh -q -h localhost --login $LOGNAME echo _TEST_" 0 '^_TEST_'
+
+# -n/--dry-run
+assert "$pussh -q -h localhost -n        echo _TEST_" 0 '^\[test\] localhost'
+assert "$pussh -q -h localhost --dry-run echo _TEST_" 0 '^\[test\] localhost'
+
+# -h/--hosts (multiple hosts)
+assert "$pussh -h localhost,127.0.0.1 echo _TEST_"      0 '^(localhost|127\.0\.0\.1): _TEST_'
+assert "$pussh -h localhost -h 127.0.0.1 echo _TEST_"   0 '^(localhost|127\.0\.0\.1): _TEST_'
+
+# -f/--from-file
+assert "echo localhost | $pussh -q -f          - echo _TEST_" 0 '^_TEST_'
+assert "echo localhost | $pussh -q --from-file - echo _TEST_" 0 '^_TEST_'
+echo localhost 127.0.0.1 >.test-in
+assert "$pussh -f .test-in echo _TEST_" 0 '^(localhost|127\.0\.0\.1): _TEST_'
+
+# -u/--upload
+assert "$pussh -q -h localhost -u       /bin/echo arg1 arg2" 0 '^arg1 arg2'
+assert "$pussh -q -h localhost --upload /bin/echo arg1 arg2" 0 '^arg1 arg2'
+
+# -i/--input
+echo _TEST_ >.test-in
+assert "$pussh -q -h localhost -i      .test-in cat" 0 '^_TEST_'
+echo _TEST_ >.test-in
+assert "$pussh -q -h localhost --input .test-in cat" 0 '^_TEST_'
+echo _TEST_ >.test-in-localhost
+echo _TEST_ >.test-in-127.0.0.1
+assert "$pussh -h localhost,127.0.0.1 -i .test-in-%h cat"           0 '^(localhost|127\.0\.0\.1): _TEST_'
+assert "$pussh -q -h localhost -i 'echo _TEST_|' cat"               0 '_TEST_'
+assert "$pussh -q -h localhost,127.0.0.1 -i 'echo %h= _TEST_|' cat" 0 '^(localhost|127\.0\.0\.1)= _TEST_'
+
+# -o/--output
+assert "$pussh -q -h localhost -o       .test-out echo _TEST_" 0 '' '' 'grep -qE ^_TEST_ .test-out'
+assert "$pussh -q -h localhost --output .test-out echo _TEST_" 0 '' '' 'grep -qE ^_TEST_ .test-out'
+assert "$pussh -q -h localhost,127.0.0.1 -o .test-out-%h echo _TEST_" 0 '' '' \
+  'grep -qE ^_TEST_ .test-out-localhost && grep -qE ^_TEST_ .test-out-127.0.0.1'
+assert "$pussh -q -h localhost -o '|cat >.test-out' echo _TEST_" 0 '' '' 'grep -qE ^_TEST_ .test-out'
+assert "$pussh -q -h localhost,127.0.0.1 -o '|cat >.test-out-%h' echo _TEST_" 0 '' '' \
+  'grep -qE ^_TEST_ .test-out-localhost && grep -qE ^_TEST_ .test-out-127.0.0.1'
+
+exit $failed

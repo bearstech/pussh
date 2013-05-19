@@ -1,0 +1,293 @@
+#!/bin/bash
+
+# pussh - run commands thru ssh on hundreds of server
+# Copyright (C) 2011,2012 Bearstech - http://bearstech.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+THIS_NAME=pussh
+THIS_VERSION=1.0
+
+
+# Dependencies:
+# - bash (bashisms: arrays, string manipulation)
+# - sed
+# - a bunch of coreutils thingies (cat, cut, dd, date, stat, basename,
+#   dirname, printf, md5sum)
+# - ssh client (duh)
+
+
+help() {
+  cat <<EOF
+Usage: $0 [options] command args ...
+
+Options:
+  -f, --from-file <file>   connect to hosts listed in file, one per line.
+                           Special file '-' may be used for stdin
+  -h, --hosts <host,...>   connect to hosts. Several -h options may be used
+  -i, --input <input>      feed a file (%h to split by host, -i in/%h.txt)
+                           or a command to remote stdin (-i 'tar -czC in/%h|')
+  -l, --login <user>       remote login name; shortcut for -s '-l <user>'
+  -n, --dry-run            dry run: don't run commands, only print what would
+                           be done
+  -o, --output <output>    output to a file (%h to split by host, -o out/%h.txt),
+                           or to a command ( -o '|tar -xzC out/%h')
+  -q, --quiet              quiet: don't stamp (prefix) stdout and stderr, do
+                           not report total hosts and time
+  -r, --rate               connect rate in new SSH connections/sec (default: 10)
+  -s, --ssh-opt <options>  pass options to SSH, eg -s '-x -p 2022'
+  -u, --upload             upload the command file and run its copy remotely
+
+  --help                   display this help and exit
+  --version                output version information and exit
+EOF
+}
+
+version() {
+  echo "$THIS_NAME $THIS_VERSION"
+}
+
+error() {
+  echo "$THIS_NAME error: $*" >&2
+  exit 1
+}
+
+
+# Options
+dryrun=
+hostfile=
+hosts=
+input=
+output=
+upload=
+quiet=
+rate=10
+sshopt=
+
+parse_opt=run
+while [ $parse_opt != "done"  ] ; do
+  case "$1" in
+
+    -f|--from-file) shift; hosts="$hosts $(cat $1)";;
+    -h|--hosts)     shift; hosts="$hosts $(echo $1 |sed -e 's/,\+/ /g')";;
+    -i|--input)     shift; input="$1";;
+    -l|--login)     shift; sshopt="$sshopt -l$1";;
+    -n|--dry-run)   dryrun=yes;;
+    -o|--output)    shift; output="$1";;
+    -q|--quiet)     quiet=yes;;
+    -r|--rate)      shift; rate="$1";;
+    -s|--ssh-opt)   shift; sshopt="$sshopt $1";;
+    -u|--upload)    upload=yes;;
+
+    --help)         help; exit 0;;
+    --version)      version; exit 0;;
+
+    --)             parse_opt=done; shift; break;;
+    -*)             error "unknown option '$1'";;
+    *)              parse_opt=done; break;;
+  esac
+  shift
+done
+
+# Make sure we have something to do
+#
+if [ $# = 0 ]; then
+  error "missing command, nothing to do"
+fi
+
+# In upload mode, we try to test the program availability early rather than
+# fail later on all remote hosts. The best test is to actually open and read
+# it.
+if [ -n "$upload" ]; then
+  pname="$1"
+  shift
+  perr=$(cat "$pname" 2>&1 >/dev/null)
+  if [ -n "$perr" ]; then
+    error "$perr"
+  fi
+
+  # We'll need the program size to transfer it as "SSH shell session preamble"
+  # (see below).
+  plen=$(stat -c%s "$pname")
+  ptmp=/tmp/remote-$(basename "$pname")-$$
+fi
+
+# Compute sleep period from connection rate (we strive to avoid 'bc')
+#
+if [ "$rate" -gt 0 ]; then
+  delay=$(printf ".%03d" $((1000 / $rate)))
+fi
+
+# Count hosts and compute their maximal print witdh for pretty printing
+#
+nhost=0
+width=0
+for host in $hosts; do
+  nhost=$(($nhost + 1))
+  width=$(( ${#host} > $width ? ${#host} : $width ))
+  if [ -n "$dryrun" ]; then
+    echo "[test] $host"
+  fi
+done
+if [ $nhost = 0 ]; then
+  error "no hosts, either specify hosts with -h or -f"
+fi
+if [ -n "$dryrun" ]; then
+  echo "Total: $nhost hosts(s)" >&2
+  exit 0
+fi
+export width
+
+
+# Input methods
+#
+
+input_null() {
+  exec <&-
+}
+
+input_file() {
+  case "$input" in
+    *%h*) infile="${input//\%h/$host}";;
+       *) infile="$input";;
+  esac
+  exec cat "$infile"
+}
+
+input_cmd() {
+  case "$input" in
+    *%h*) incmd="${input//\%h/$host}";;
+       *) incmd="$input";;
+  esac
+  eval ${incmd::${#incmd}-1}
+}
+
+export input
+case "$input" in
+  "")  incmd=input_null;;
+  *\|) incmd=input_cmd;;
+  *)   incmd=input_file;;
+esac
+
+
+# Output methods
+#
+
+declare -A stamp
+
+output_stamp() {
+  # In silence mode, use 'cat' passthru
+  if [ -n "$quiet" ]; then
+    cat
+    exit 0
+  fi
+
+  # Otherwise compute $stamp and use 'sed' to prefix every line
+  s=${stamp["$host"]}
+  if [ -z "$s" ]; then
+    if [ -t 1 ]; then
+      # Output is a tty, do VT100 fun. To map a given hostname to a constant
+      # color, we use a hash on the hostname modulo 8 colors.
+      c=$(( 0x$(echo -n $host | md5sum | cut -b1) % 8 ))
+      s=$(printf "\e[01;3%dm%-${width}s\e[00m: " $c $host)
+    else
+      s=$(printf "%-${width}s: " $host)
+    fi
+    stamp["$host"]="$s"
+  fi
+  sed -e "s/^/$s/"
+}
+
+# FIXME: this is probably buggy to use one 'cat >>' per SSH session when
+# outputing to a single file, output merges in a single file from multiple
+# processes are unpredictable and not necessarily aligned at the line
+# boundary. It just looks like it happens to work with 130 hosts (in ~20sec),
+# we'll see.
+output_file() {
+  case "$output" in
+    *%h*) outfile="${output//\%h/$host}"; per_host=1;;
+       *) outfile="$output"; started=$output_started; export output_started=1;; 
+  esac
+
+  # Be cool, create folder(s) if necessary
+  outpath=$(dirname "$outfile")
+  if [ "$outpath" != "$outfile" ]; then
+    mkdir -p "$outpath"
+  fi
+
+  if [ -n "$per_host" -o ! -n "$started" ]; then
+    cat >"$outfile"
+  else
+    cat >>"$outfile"
+  fi
+}
+
+output_cmd() {
+  case "$output" in
+    *%h*) outcmd="${output//\%h/$host}";;
+       *) outcmd="$output";;
+  esac
+  eval ${outcmd:1}
+}
+
+export output
+case "$output" in
+  "")  outcmd=output_stamp;;
+  \|*) outcmd=output_cmd;;
+  *)   outcmd=output_file;;
+esac
+
+# Command line args re-quote - you don't want to know this shell ugliness.
+# But it is important to know that SSH on the server side will _always_
+# exec the remote command thru the login shell, thus args are 'expanded'.
+# (thanks to http://blogs.gentoo.org/agriffis/2006/02/07/requoting_in_bash)
+argv=
+for a in "$@"; do 
+  qa=$(printf %q "$a")
+  argv="$argv $qa"
+done
+
+t0=$(date +%s)
+
+for hostspec in $hosts; do
+  # $hostspec is 'root@foo' or 'foo', while $host is the plain host
+  export host=$(echo "$hostspec" | cut -d@ -f2)
+  (
+    # We use the same SSH connexion to:
+    # 1. transfer the script (hence dd...count=$scriptlen)
+    # 2. then run the script, with closed stdin
+    # 3. cleanup the remote end
+    if [ -n "$upload" ]; then
+      ( cat "$pname"; $incmd ) | \
+      ssh $sshopt $hostspec \
+        "dd of=\"$ptmp\" bs=1 count=$plen 2>/dev/null && chmod +x $ptmp && $ptmp $argv; e=\$?; rm $ptmp; exit \$e" \
+        2>&1 | $outcmd
+    else
+      $incmd | \
+      ssh $sshopt $hostspec \
+        "$argv" \
+        2>&1 | $outcmd
+    fi
+  ) &
+  # We need to throttle a bit otherwise the local ssh-agent fails
+  sleep $delay
+done
+
+wait
+t1=$(date +%s)
+dt=$(( $t1 - $t0 ))
+
+if [ -z "$quiet" ]; then
+  echo "Total: $nhost hosts(s), $dt second(s)" >&2
+fi

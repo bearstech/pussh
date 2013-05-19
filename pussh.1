@@ -1,0 +1,21 @@
+Usage: $0 [options] command args ...
+
+Options:
+  -f, --from-file <file>   connect to hosts listed in file, one per line.
+                           Special file '-' may be used for stdin
+  -h, --hosts <host,...>   connect to hosts. Several -h options may be used
+  -i, --input <input>      feed a file (%h to split by host, -i in/%h.txt)
+                           or a command to remote stdin (-i 'tar -czC in/%h|')
+  -l, --login <user>       remote login name; shortcut for -s '-l <user>'
+  -n, --dry-run            dry run: don't run commands, only print what would
+                           be done
+  -o, --output <output>    output to a file (%h to split by host, -o out/%h.txt),
+                           or to a command ( -o '|tar -xzC out/%h')
+  -q, --quiet              quiet: don't stamp (prefix) stdout and stderr, do
+                           not report total hosts and time
+  -r, --rate               connect rate in new SSH connections/sec (default: 10)
+  -s, --ssh-opt <options>  pass options to SSH, eg -s '-x -p 2022'
+  -u, --upload             upload the command file and run its copy remotely
+
+  --help                   display this help and exit
+  --version                output version information and exit

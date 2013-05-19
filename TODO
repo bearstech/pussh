@@ -1,0 +1,12 @@
+TODO:
+
+- output grouping (per host buffering until command is done) + optionnal sorting
+  (different than pussh ...|sort since it keeps per host time ordered output)
+
+- limit number of simultaneous connections
+
+- don't fold host's stderr into stdout, eg:
+  ( ( cmd | sed 's/^/out: /' )  3>&1 1>&2 2>&3 ) | sed 's/^/err: /' 3>&1 1>&2 2>&3
+
+- gather command exit status, make some use (stats, etc)
+
