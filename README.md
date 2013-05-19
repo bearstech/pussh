@@ -23,8 +23,8 @@ Or collect per-host output, like for inventories :
 
     $ pussh -f servers -o %h-hw.txt lshw
 
-And you can even pipe each SSH session to a specific command (%h is also available if you
-whish) :
+And you can even pipe each SSH session output to a specific command (%h is also
+available if you whish) :
 
     $ pussh -f servers -o '|grep feature' command >output
 
@@ -36,9 +36,9 @@ Obviously, you have the same features for the SSH sessions input :
 
 You may mix -i and -o freely.
 
-More interestingly, you can send and execute a command in one go (but it won't handle
-the dependencies for you, make sur your executable is self-contained or your host
-environment is compatible with the target ones) :
+More interestingly, you can send and execute a command in one go (but it won't
+handle the dependencies for you, make sur your executable is self-contained or
+your host environment is compatible with the target ones) :
 
     $ pussh -f servers -u my-deploy.sh args ...
 
@@ -47,18 +47,41 @@ establishement rate, and this rate is itself limited by the SSH agent. It is
 recommand to tune your rate one for a specific host and stick to it. Exceeding
 rates generate strange connection errors.
 
-   $ alias pussh='pussh -r 50'
+    $ alias pussh='pussh -r 50'
+
+Speed is mainly sensitive to network latency. You may first login into one of
+your remote LAN machine with ssh forwarding (ssh -A) then run 'pussh' from
+there, the closest possible from its targets. Here is a real benchmark
+on a Gigabit LAN with OpenSSH 5.x on all servers :
+
+    $ time pussh -f servers -r 100 date
+    ...
+    Total: 201 host(s), 4 second(s)
+ 
+    real    0m4.069s
+    user    0m7.132s
+    sys     0m3.140s
 
 
 History
-=======
+-------
 
-Pussh has been an internal tool at Bearstech since roughly 2008. It started with
-4 or 5 lines of shell and quickly evolved to its current form. It's still heavily
-used on a 200+ cluster server, and most of the time reach all of its targets in
-a few seconds. It is coupled to a cloud management solutions to generate a
-useful list of hosts from very simple descriptions.
+Pussh has been an internal tool at Bearstech since roughly 2008. It started
+with 4 or 5 lines of shell and quickly evolved to its current form. It's still
+heavily used on a 200+ cluster server, and most of the time reach all of its
+targets in a few seconds. It is coupled to a cloud management solution to
+generate a useful list of hosts from very simple descriptions.
 
 It has only been recently modified as a generic project, we had to remove
 several hardcoded thingies. And add a real doc. And some tests. Actually
 we had to make it much better, which is cool.
+
+
+Quirks
+------
+
+* Remote's stdout and stderr ends mixed up in the same stdout stream in the
+  end. Any help to circumvent this is welcome.
+* There is no way to use the remote exit status.
+* The coloring hack is scary and porbably useless.
+
