@@ -44,8 +44,9 @@ your host environment is compatible with the target ones) :
 
 Most of the time the total time of execution is limite by the SSH connection
 establishement rate, and this rate is itself limited by the SSH agent. It is
-recommand to tune your rate one for a specific host and stick to it. Exceeding
-rates generate strange connection errors.
+recommended to tune your rate one for a specific host and stick to it.
+Exceeding rates generate strange connection errors (such as failed ssh-agent
+auths, 'no route to host', etc.).
 
     $ alias pussh='pussh -r 50'
 

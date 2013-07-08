@@ -3,11 +3,11 @@ Upstream-Name: pussh
 Source: <https://github.com/bearstech/pussh>
 
 Files: *
-Copyright: 2011-2013 Vincent Caron <vcaron@bearstech.com>
+Copyright: 2011-2013 Bearstech <http://bearstech.com>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2013 Vincent CARON <vcaron@bearstech.com>
+Copyright: 2011-2013 Bearstech <http://bearstech.com>
 License: GPL-3.0+
 
 License: GPL-3.0+
