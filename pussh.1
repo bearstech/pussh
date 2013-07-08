@@ -22,10 +22,10 @@ which should hopefully be easy.
 .TP
 \fB-f\fR, \fB--from-file\fR FILE
 connect to hosts listed in FILE, one per line.  Special file '-' may be used
-for stdin
+for stdin.
 .TP
 \fB-h\fR, \fB--hosts\fR HOST,...
-connect to hosts. Several -h options may be used
+connect to hosts. Several -h options may be used.
 .TP
 \fB-i\fR, \fB--input\fR INPUT
 feed a file (%h to split by host, -i in/%h.txt) or a command to remote stdin
@@ -59,6 +59,8 @@ display this help and exit
 .TP
 \fB--version\fR
 output version information and exit
+.PP
+You may use the SSH syntax \fBlogin@host\fR for HOST within \fB--from-file\fR and \fB--hosts\fR options to specify a different login for each host. This will override the \fB--login\fR option if given.
 
 .SH EXAMPLES
 .PP
@@ -77,6 +79,14 @@ pussh -f servers sed -ne "s/^model name.*: //p" /proc/cpuinfo |sort |uniq -c
 Fetch a list of installed package in one file per host :
 .IP
 pussh -f servers -o packages-for-%h dpkg --get-selections
+.PP
+Mass copy a file tree (broadcast) :
+.IP
+tar czf files.tar.gz ... && pussh -f servers -i files.tar.gz tar -xzC /to/dest
+.PP
+Mass copy several remote file trees (gather) :
+.IP
+pussh -f servers -o '|(mkdir -p %h && tar -xzC %h)' tar -czC /src/path .
 
 .SH AUTHOR
 Written by Vincent Caron <vcaron@bearstech.com>.
