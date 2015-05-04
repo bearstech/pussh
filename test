@@ -21,7 +21,7 @@
 #
 # Only non-empty fields are checked.
 #
-# Use .test-* files for input, they will be cleaned out for you.
+# Use .test-* files for input, they will be cleaned up for you.
 #
 assert() {
   cmd="$1"
@@ -91,7 +91,7 @@ assert "$pussh -h localhost -h 127.0.0.1 echo _TEST_"   0 '^(localhost|127\.0\.0
 # -f/--from-file
 assert "echo localhost | $pussh -q -f          - echo _TEST_" 0 '^_TEST_'
 assert "echo localhost | $pussh -q --from-file - echo _TEST_" 0 '^_TEST_'
-echo localhost 127.0.0.1 >.test-in
+echo "localhost 127.0.0.1" >.test-in
 assert "$pussh -f .test-in echo _TEST_" 0 '^(localhost|127\.0\.0\.1): _TEST_'
 
 # -u/--upload
@@ -99,12 +99,12 @@ assert "$pussh -q -h localhost -u       /bin/echo arg1 arg2" 0 '^arg1 arg2'
 assert "$pussh -q -h localhost --upload /bin/echo arg1 arg2" 0 '^arg1 arg2'
 
 # -i/--input
-echo _TEST_ >.test-in
+echo "_TEST_" >.test-in
 assert "$pussh -q -h localhost -i      .test-in cat" 0 '^_TEST_'
-echo _TEST_ >.test-in
+echo "_TEST_" >.test-in
 assert "$pussh -q -h localhost --input .test-in cat" 0 '^_TEST_'
-echo _TEST_ >.test-in-localhost
-echo _TEST_ >.test-in-127.0.0.1
+echo "_TEST_" >.test-in-localhost
+echo "_TEST_" >.test-in-127.0.0.1
 assert "$pussh -h localhost,127.0.0.1 -i .test-in-%h cat"           0 '^(localhost|127\.0\.0\.1): _TEST_'
 assert "$pussh -q -h localhost -i 'echo _TEST_|' cat"               0 '_TEST_'
 assert "$pussh -q -h localhost,127.0.0.1 -i 'echo %h= _TEST_|' cat" 0 '^(localhost|127\.0\.0\.1)= _TEST_'
