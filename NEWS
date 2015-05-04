@@ -1,3 +1,7 @@
-pussh 1.0 - 2013-05-?
+pussh 1.1 - (not released)
+
+    * Removed host coloring, was inefficient and useless
+
+pussh 1.0 - 2013-05-19
 
     * First public release (being used for 4 years internally at Bearstech)

@@ -196,14 +196,7 @@ output_stamp() {
   # Otherwise compute $stamp and use 'sed' to prefix every line
   s=${stamp["$host"]}
   if [ -z "$s" ]; then
-    if [ -t 1 ]; then
-      # Output is a tty, do VT100 fun. To map a given hostname to a constant
-      # color, we use a hash on the hostname modulo 8 colors.
-      c=$(( 0x$(echo -n $host | md5sum | cut -b1) % 8 ))
-      s=$(printf "\e[01;3%dm%-${width}s\e[00m: " $c $host)
-    else
-      s=$(printf "%-${width}s: " $host)
-    fi
+    s=$(printf "%-${width}s: " $host)
     stamp["$host"]="$s"
   fi
   sed -e "s/^/$s/"

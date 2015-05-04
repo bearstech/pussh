@@ -84,5 +84,4 @@ Quirks
 * Remote's stdout and stderr ends mixed up in the same stdout stream in the
   end. Any help to circumvent this is welcome.
 * There is no way to use the remote exit status.
-* The coloring hack is scary and porbably useless.
 
