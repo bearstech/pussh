@@ -93,6 +93,8 @@ assert "echo localhost | $pussh -q -f          - echo _TEST_" 0 '^_TEST_'
 assert "echo localhost | $pussh -q --from-file - echo _TEST_" 0 '^_TEST_'
 echo "localhost 127.0.0.1" >.test-in
 assert "$pussh -f .test-in echo _TEST_" 0 '^(localhost|127\.0\.0\.1): _TEST_'
+echo "localhost\n#nowhere" >.test-in
+assert "$pussh -f .test-in echo _TEST_" 0 '^localhost: _TEST_'
 
 # -u/--upload
 assert "$pussh -q -h localhost -u       /bin/echo arg1 arg2" 0 '^arg1 arg2'
