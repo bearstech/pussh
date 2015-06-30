@@ -79,7 +79,7 @@ parse_opt=run
 while [ $parse_opt != "done"  ] ; do
   case "$1" in
 
-    -f|--from-file) shift; hosts="$hosts $(cat $1 | grep -v '^#')";;
+    -f|--from-file) shift; hosts="$hosts $(grep -v '^#' $1)";;
     -h|--hosts)     shift; hosts="$hosts $(echo $1 |sed -e 's/,\+/ /g')";;
     -i|--input)     shift; input="$1";;
     -l|--login)     shift; sshopt="$sshopt -l$1";;
