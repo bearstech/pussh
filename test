@@ -32,6 +32,7 @@ assert() {
 
   eval "$cmd" >.test-stdout 2>.test-stderr
   status=$?
+  _failed=$failed
 
   if [ -n "$ex" -a "$ex" -ne $status ]; then
     echo "FAIL: $cmd: expected status $ex, got $status"
@@ -53,10 +54,22 @@ assert() {
     let failed=$failed+1
   fi
 
+  if [ $opt_stop = y -a $_failed != $failed ]; then
+    exit $failed
+  fi
+
   rm -f .test-*
 }
 
 pussh=./pussh
+
+opt_stop=n
+case "$1" in
+  -s|--stop-on-error) opt_stop=y;;
+  -*) echo "Usage: $0 [-s|--stop-on-errorl]" >&2; exit 1
+esac
+
+failed=0
 
 assert "$pussh"           1 '' 'missing command'
 assert "$pussh --help"    0 '^Usage:'
@@ -93,7 +106,7 @@ assert "echo localhost | $pussh -q -f          - echo _TEST_" 0 '^_TEST_'
 assert "echo localhost | $pussh -q --from-file - echo _TEST_" 0 '^_TEST_'
 echo "localhost 127.0.0.1" >.test-in
 assert "$pussh -f .test-in echo _TEST_" 0 '^(localhost|127\.0\.0\.1): _TEST_'
-echo "localhost\n#nowhere" >.test-in
+echo -e "localhost\n#nowhere" >.test-in
 assert "$pussh -f .test-in echo _TEST_" 0 '^localhost: _TEST_'
 
 # -u/--upload
