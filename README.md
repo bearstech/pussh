@@ -42,10 +42,10 @@ your host environment is compatible with the target ones) :
 
     $ pussh -f servers -u my-deploy.sh args ...
 
-Most of the time the total time of execution is limite by the SSH connection
+Most of the time the total time of execution is limited by the SSH connection
 establishement rate, and this rate is itself limited by the SSH agent. It is
-recommended to tune your rate one for a specific host and stick to it.
-Exceeding rates generate strange connection errors (such as failed ssh-agent
+recommended to tune your rate for a specific host and stick to it.  Exceeding
+rates generate strange connection errors (such as failed ssh-agent
 auths, 'no route to host', etc.).
 
     $ alias pussh='pussh -r 50'
@@ -69,17 +69,13 @@ History
 
 Pussh has been an internal tool at Bearstech since roughly 2008. It started
 with 4 or 5 lines of shell and quickly evolved to its current form. It's still
-heavily used on a 200+ cluster server, and most of the time reach all of its
+heavily used on a 350+ cluster server, and most of the time reach all of its
 targets in a few seconds. It is coupled to a cloud management solution to
 generate a useful list of hosts from very simple descriptions.
 
-It has only been recently modified as a generic project, we had to remove
-several hardcoded thingies. And add a real doc. And some tests. Actually
-we had to make it much better, which is cool.
 
-
-Quirks
-------
+Limitations
+-----------
 
 * Remote's stdout and stderr ends mixed up in the same stdout stream in the
   end. Any help to circumvent this is welcome.
