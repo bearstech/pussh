@@ -3,7 +3,7 @@ pussh
 
 Parallel SSH, batch and command line oriented.
 
-Basic commands, where output is send prefixed by the host name :
+Basic commands, where output is sent prefixed by the host name :
 
     $ pussh -h host1,host2bis,... uname -a
     host1   : Linux host1 3.2.0-4-amd64 #1 SMP Debian 3.2.41-2 x86_64 GNU/Linux
