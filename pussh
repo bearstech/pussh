@@ -66,7 +66,6 @@ error() {
 
 # Options
 dryrun=
-hostfile=
 hosts=
 input=
 output=
@@ -75,12 +74,12 @@ quiet=
 rate=10
 sshopt=
 
-parse_opt=run
-while [ $parse_opt != "done"  ] ; do
+parse_opt='run'
+while [ -n "$parse_opt"  ] ; do
   case "$1" in
 
-    -f|--from-file) shift; hosts="$hosts $(cat $1)";;
-    -h|--hosts)     shift; hosts="$hosts $(echo $1 |sed -e 's/,\+/ /g')";;
+    -f|--from-file) shift; hosts="$hosts $(cat "$1")";;
+    -h|--hosts)     shift; hosts="$hosts ${1//,/ }";;
     -i|--input)     shift; input="$1";;
     -l|--login)     shift; sshopt="$sshopt -l$1";;
     -n|--dry-run)   dryrun=yes;;
@@ -93,9 +92,9 @@ while [ $parse_opt != "done"  ] ; do
     --help)         help; exit 0;;
     --version)      version; exit 0;;
 
-    --)             parse_opt=done; shift; break;;
+    --)             parse_opt=; shift; break;;
     -*)             error "unknown option '$1'";;
-    *)              parse_opt=done; break;;
+    *)              parse_opt=; break;;
   esac
   shift
 done
@@ -126,7 +125,7 @@ fi
 # Compute sleep period from connection rate (we strive to avoid 'bc')
 #
 if [ "$rate" -gt 0 ]; then
-  delay=$(printf ".%03d" $((1000 / $rate)))
+  delay=$(printf ".%03d" $((1000 / rate)))
 fi
 
 # Count hosts and compute their maximal print witdh for pretty printing
@@ -134,8 +133,8 @@ fi
 nhost=0
 width=0
 for host in $hosts; do
-  nhost=$(($nhost + 1))
-  width=$(( ${#host} > $width ? ${#host} : $width ))
+  nhost=$((nhost + 1))
+  width=$((${#host} > width ? ${#host} : width))
   if [ -n "$dryrun" ]; then
     echo "[test] $host"
   fi
@@ -170,7 +169,7 @@ input_cmd() {
     *%h*) incmd="${input//\%h/$host}";;
        *) incmd="$input";;
   esac
-  eval ${incmd::${#incmd}-1}
+  eval "${incmd::${#incmd}-1}"
 }
 
 export input
@@ -196,7 +195,7 @@ output_stamp() {
   # Otherwise compute $stamp and use 'sed' to prefix every line
   s=${stamp["$host"]}
   if [ -z "$s" ]; then
-    s=$(printf "%-${width}s: " $host)
+    s=$(printf "%-${width}s: " "$host")
     stamp["$host"]="$s"
   fi
   sed -e "s/^/$s/"
@@ -219,7 +218,7 @@ output_file() {
     mkdir -p "$outpath"
   fi
 
-  if [ -n "$per_host" -o ! -n "$started" ]; then
+  if [ -n "$per_host" ] || [ -z "$started" ]; then
     cat >"$outfile"
   else
     cat >>"$outfile"
@@ -231,7 +230,7 @@ output_cmd() {
     *%h*) outcmd="${output//\%h/$host}";;
        *) outcmd="$output";;
   esac
-  eval ${outcmd:1}
+  eval "${outcmd:1}"
 }
 
 export output
@@ -255,7 +254,8 @@ t0=$(date +%s)
 
 for hostspec in $hosts; do
   # $hostspec is 'root@foo' or 'foo', while $host is the plain host
-  export host=$(echo "$hostspec" | cut -d@ -f2)
+  host=$(echo "$hostspec" | cut -d@ -f2)
+  export host
   (
     # We use the same SSH connexion to:
     # 1. transfer the script (hence dd...count=$scriptlen)
@@ -263,23 +263,23 @@ for hostspec in $hosts; do
     # 3. cleanup the remote end
     if [ -n "$upload" ]; then
       ( cat "$pname"; $incmd ) | \
-      ssh $sshopt $hostspec \
+      ssh $sshopt "$hostspec" \
         "dd of=\"$ptmp\" bs=1 count=$plen 2>/dev/null && chmod +x $ptmp && $ptmp $argv; e=\$?; rm $ptmp; exit \$e" \
         2>&1 | $outcmd
     else
       $incmd | \
-      ssh $sshopt $hostspec \
+      ssh $sshopt "$hostspec" \
         "$argv" \
         2>&1 | $outcmd
     fi
   ) &
   # We need to throttle a bit otherwise the local ssh-agent fails
-  sleep $delay
+  sleep "$delay"
 done
 
 wait
 t1=$(date +%s)
-dt=$(( $t1 - $t0 ))
+dt=$((t1 - t0))
 
 if [ -z "$quiet" ]; then
   echo "Total: $nhost hosts(s), $dt second(s)" >&2
