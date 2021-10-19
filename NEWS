@@ -1,6 +1,7 @@
-pussh 1.1 - (not released)
+pussh 1.1 - 2021-10-19
 
     * Removed host coloring, was inefficient and useless
+    * Ignoring commented lines (#) from -f|--from-file source (@Mickael-Martin)
 
 pussh 1.0 - 2013-05-19
 
