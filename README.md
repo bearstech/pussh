@@ -24,7 +24,7 @@ Or collect per-host output, like for inventories :
     $ pussh -f servers -o %h-hw.txt lshw
 
 And you can even pipe each SSH session output to a specific command (%h is also
-available if you whish) :
+available if you wish) :
 
     $ pussh -f servers -o '|grep feature' command >output
 
@@ -37,13 +37,13 @@ Obviously, you have the same features for the SSH sessions input :
 You may mix -i and -o freely.
 
 More interestingly, you can send and execute a command in one go (but it won't
-handle the dependencies for you, make sur your executable is self-contained or
+handle the dependencies for you, make sure your executable is self-contained or
 your host environment is compatible with the target ones) :
 
     $ pussh -f servers -u my-deploy.sh args ...
 
 Most of the time the total time of execution is limited by the SSH connection
-establishement rate, and this rate is itself limited by the SSH agent. It is
+establishment rate, and this rate is itself limited by the SSH agent. It is
 recommended to tune your rate for a specific host and stick to it.  Exceeding
 rates generate strange connection errors (such as failed ssh-agent
 auths, 'no route to host', etc.).
