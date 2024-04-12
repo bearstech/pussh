@@ -1,6 +1,6 @@
 TODO:
 
-- output grouping (per host buffering until command is done) + optionnal sorting
+- output grouping (per host buffering until command is done) + optional sorting
   (different than pussh ...|sort since it keeps per host time ordered output)
 
 - limit number of simultaneous connections

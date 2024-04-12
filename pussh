@@ -129,7 +129,7 @@ if [ "$rate" -gt 0 ]; then
   delay=$(printf ".%03d" $((1000 / rate)))
 fi
 
-# Count hosts and compute their maximal print witdh for pretty printing
+# Count hosts and compute their maximal print width for pretty printing
 #
 nhost=0
 width=0
@@ -205,7 +205,7 @@ output_stamp() {
 }
 
 # FIXME: this is probably buggy to use one 'cat >>' per SSH session when
-# outputing to a single file, output merges in a single file from multiple
+# outputting to a single file, output merges in a single file from multiple
 # processes are unpredictable and not necessarily aligned at the line
 # boundary. It just looks like it happens to work with 130 hosts (in ~20sec),
 # we'll see.
@@ -269,7 +269,7 @@ for hostspec in $hosts; do
 
   export host
   (
-    # We use the same SSH connexion to:
+    # We use the same SSH connection to:
     # 1. transfer the script (hence dd...count=$scriptlen)
     # 2. then run the script, with closed stdin
     # 3. cleanup the remote end
