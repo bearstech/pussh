@@ -1,3 +1,7 @@
+pussh 1.3 - 2024-04-12
+
+    * -h/--hosts now fully support [login@]host[:port] syntax
+
 pussh 1.2 - 2024-04-12
 
     * Fully implemented comment/empty ligne ignorance in -f

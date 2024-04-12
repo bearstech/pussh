@@ -100,6 +100,9 @@ assert "$pussh -q -h localhost --dry-run echo _TEST_" 0 '^\[test\] localhost'
 # -h/--hosts (multiple hosts)
 assert "$pussh -h localhost,127.0.0.1 echo _TEST_"      0 '^(localhost|127\.0\.0\.1): _TEST_'
 assert "$pussh -h localhost -h 127.0.0.1 echo _TEST_"   0 '^(localhost|127\.0\.0\.1): _TEST_'
+assert "$pussh -h $LOGNAME@localhost echo _TEST_"       0 '^localhost: _TEST_'
+assert "$pussh -h $LOGNAME@localhost:22 echo _TEST_"    0 '^localhost: _TEST_'
+assert "$pussh -h localhost:22 echo _TEST_"             0 '^localhost: _TEST_'
 
 # -f/--from-file
 assert "echo localhost | $pussh -q -f          - echo _TEST_" 0 '^_TEST_'

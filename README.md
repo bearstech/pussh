@@ -53,7 +53,7 @@ auths, 'no route to host', etc.).
 Speed is mainly sensitive to network latency. You may first login into one of
 your remote LAN machine with ssh forwarding (ssh -A) then run 'pussh' from
 there, the closest possible from its targets. Here is a real benchmark
-on a Gigabit LAN with OpenSSH 5.x on all servers :
+on a Gigabit LAN :
 
     $ time pussh -f servers -r 100 date
     ...
@@ -69,15 +69,14 @@ History
 
 Pussh has been an internal tool at Bearstech since roughly 2008. It started
 with 4 or 5 lines of shell and quickly evolved to its current form. It's still
-heavily used on a 350+ cluster server, and most of the time reach all of its
-targets in a few seconds. It is coupled to a cloud management solution to
+heavily used on a 500+ cluster server, and most of the time reach all of its
+targets in about 10 seconds. It is coupled to a cloud management solution to
 generate a useful list of hosts from very simple descriptions.
 
 
 Limitations
 -----------
 
-* Remote's stdout and stderr ends mixed up in the same stdout stream in the
-  end. Any help to circumvent this is welcome.
+* Remote's stdout and stderr ends mixed up in the same stdout stream.
 * There is no way to use the remote exit status.
 

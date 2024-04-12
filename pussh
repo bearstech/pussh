@@ -17,13 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 THIS_NAME=pussh
-THIS_VERSION=1.2
+THIS_VERSION=1.3
 
 
 # Dependencies:
 # - bash (bashisms: arrays, string manipulation)
-# - a bunch of coreutils thingies (cat, cut, dd, date, stat, basename,
-#   dirname, printf, md5sum)
+# - coreutils thingies (cat, dd, date, stat, basename, dirname)
+# - grep
 # - sed
 # - ssh client (duh)
 
@@ -35,17 +35,18 @@ Usage: $0 [options] command args ...
 Options:
   -f, --from-file <file>   connect to hosts listed in file, one per line.
                            Special file '-' may be used for stdin
-  -h, --hosts <host,...>   connect to hosts. Several -h options may be used
+  -h, --hosts <host,...>   connect to hosts. Several -h options may be used,
+                           syntax [login@]host[:port] is accepted
   -i, --input <input>      feed a file (%h to split by host, -i in/%h.txt)
                            or a command to remote stdin (-i 'tar -czC in/%h|')
   -l, --login <user>       remote login name; shortcut for -s '-l <user>'
   -n, --dry-run            dry run: don't run commands, only print what would
                            be done
-  -o, --output <output>    output to a file (%h to split by host, -o out/%h.txt),
-                           or to a command ( -o '|tar -xzC out/%h')
+  -o, --output <output>    output to a file (%h to split by host, -o %h.txt),
+                           or to a command (-o '|tar -xzC out/%h')
   -q, --quiet              quiet: don't stamp (prefix) stdout and stderr, do
                            not report total hosts and time
-  -r, --rate               connect rate in new SSH connections/sec (default: 10)
+  -r, --rate               connect rate in new SSH conn/sec (default: 10)
   -s, --ssh-opt <options>  pass options to SSH, eg -s '-x -p 2022'
   -u, --upload             upload the command file and run its copy remotely
 
@@ -132,7 +133,9 @@ fi
 #
 nhost=0
 width=0
-for host in $hosts; do
+for hostspec in $hosts; do
+  host="${hostspec##*@}"
+  host="${host%%:*}"
   nhost=$((nhost + 1))
   width=$((${#host} > width ? ${#host} : width))
   if [ -n "$dryrun" ]; then
@@ -253,8 +256,17 @@ done
 t0=$(date +%s)
 
 for hostspec in $hosts; do
-  # $hostspec is 'root@foo' or 'foo', while $host is the plain host
-  host=$(echo "$hostspec" | cut -d@ -f2)
+  # $hostspec is '[root@]foo[:port]', extract loginhost/host/port
+  loginhost="${hostspec%%:*}"
+  host="${loginhost##*@}"
+  port="${hostspec##*:}"
+
+  # Add ssh's "-p <port>" option if needed
+  _sshopts="$sshopts"
+  if [ "$port" != "" ] && [ "$port" != "$hostspec" ]; then
+    _sshopts="$sshopts -p $port"
+  fi
+
   export host
   (
     # We use the same SSH connexion to:
@@ -264,13 +276,13 @@ for hostspec in $hosts; do
     if [ -n "$upload" ]; then
       # shellcheck disable=SC2086,SC2029,SC2086
       ( cat "$pname"; $incmd ) | \
-      ssh $sshopts "$hostspec" \
+      ssh $_sshopts "$loginhost" \
         "dd of=\"$ptmp\" bs=1 count=$plen 2>/dev/null && chmod +x $ptmp && $ptmp $argv; e=\$?; rm $ptmp; exit \$e" \
         2>&1 | $outcmd
     else
       # shellcheck disable=SC2029,SC2086
       $incmd | \
-      ssh $sshopts "$hostspec" \
+      ssh $_sshopts "$loginhost" \
         "$argv" \
         2>&1 | $outcmd
     fi
