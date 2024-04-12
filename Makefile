@@ -2,6 +2,9 @@ default:
 
 .PHONY: test
 
+lint:
+	@shellcheck pussh
+
 test:
 	@./test
 

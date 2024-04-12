@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # pussh - run commands thru ssh on hundreds of server
-# Copyright (C) 2011-2021 Bearstech - http://bearstech.com
+# Copyright (C) 2011-2024 Bearstech - http://bearstech.com
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 THIS_NAME=pussh
-THIS_VERSION=1.1
+THIS_VERSION=1.2
 
 
 # Dependencies:
 # - bash (bashisms: arrays, string manipulation)
-# - sed
 # - a bunch of coreutils thingies (cat, cut, dd, date, stat, basename,
 #   dirname, printf, md5sum)
+# - sed
 # - ssh client (duh)
 
 
@@ -72,21 +72,21 @@ output=
 upload=
 quiet=
 rate=10
-sshopt=
+sshopts=
 
 parse_opt='run'
 while [ -n "$parse_opt"  ] ; do
   case "$1" in
 
-    -f|--from-file) shift; hosts="$hosts $(grep -v '^#' $1)";;
+    -f|--from-file) shift; hosts="$hosts $(grep -vE '^[ 	]*(#|$)' "$1")";;
     -h|--hosts)     shift; hosts="$hosts ${1//,/ }";;
     -i|--input)     shift; input="$1";;
-    -l|--login)     shift; sshopt="$sshopt -l$1";;
+    -l|--login)     shift; sshopts="$sshopts -l$1";;
     -n|--dry-run)   dryrun=yes;;
     -o|--output)    shift; output="$1";;
     -q|--quiet)     quiet=yes;;
     -r|--rate)      shift; rate="$1";;
-    -s|--ssh-opt)   shift; sshopt="$sshopt $1";;
+    -s|--ssh-opt)   shift; sshopts="$sshopts $1";;
     -u|--upload)    upload=yes;;
 
     --help)         help; exit 0;;
@@ -262,13 +262,15 @@ for hostspec in $hosts; do
     # 2. then run the script, with closed stdin
     # 3. cleanup the remote end
     if [ -n "$upload" ]; then
+      # shellcheck disable=SC2086,SC2029,SC2086
       ( cat "$pname"; $incmd ) | \
-      ssh $sshopt "$hostspec" \
+      ssh $sshopts "$hostspec" \
         "dd of=\"$ptmp\" bs=1 count=$plen 2>/dev/null && chmod +x $ptmp && $ptmp $argv; e=\$?; rm $ptmp; exit \$e" \
         2>&1 | $outcmd
     else
+      # shellcheck disable=SC2029,SC2086
       $incmd | \
-      ssh $sshopt "$hostspec" \
+      ssh $sshopts "$hostspec" \
         "$argv" \
         2>&1 | $outcmd
     fi

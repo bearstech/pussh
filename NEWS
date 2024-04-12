@@ -1,3 +1,9 @@
+pussh 1.2 - 2024-04-12
+
+    * Fully implemented comment/empty ligne ignorance in -f
+    * Lint'ed with shellcheck
+    * Safer global '-e' flag
+
 pussh 1.1 - 2021-10-19
 
     * Removed host coloring, was inefficient and useless
