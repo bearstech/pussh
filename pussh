@@ -252,8 +252,16 @@ done
 
 t0=$(date +%s)
 
-for hostspec in $hosts; do
-  # $hostspec is 'root@foo' or 'foo', while $host is the plain host
+for hostportspec in $hosts; do
+  # $hostportspec is 'root@foo', 'foo', 'root@foo:port' or 'foo:port' while
+  # in $hostspec the :port part is removed and $host is the plain host
+  if [[ "$hostportspec" =~ ":" ]]; then
+    port=$(echo "$hostportspec" | cut -d: -f2)
+    portopt="-p $port"
+  else
+    portopt=
+  fi
+  hostspec=$(echo "$hostportspec" | cut -d: -f1)
   host=$(echo "$hostspec" | cut -d@ -f2)
   export host
   (
@@ -264,13 +272,13 @@ for hostspec in $hosts; do
     if [ -n "$upload" ]; then
       # shellcheck disable=SC2086,SC2029,SC2086
       ( cat "$pname"; $incmd ) | \
-      ssh $sshopts "$hostspec" \
+      ssh $portopt $sshopts "$hostspec" \
         "dd of=\"$ptmp\" bs=1 count=$plen 2>/dev/null && chmod +x $ptmp && $ptmp $argv; e=\$?; rm $ptmp; exit \$e" \
         2>&1 | $outcmd
     else
       # shellcheck disable=SC2029,SC2086
       $incmd | \
-      ssh $sshopts "$hostspec" \
+      ssh $portopt $sshopts "$hostspec" \
         "$argv" \
         2>&1 | $outcmd
     fi
