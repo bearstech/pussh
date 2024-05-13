@@ -73,7 +73,7 @@ Count the number of processors in a cluster :
 .IP
 pussh -f servers grep ^processor /proc/cpuinfo |wc -l
 .PP
-Show the processor models, sorted by occurence :
+Show the processor models, sorted by occurrence :
 .IP
 pussh -f servers sed -ne "s/^model name.*: //p" /proc/cpuinfo |sort |uniq -c
 .PP

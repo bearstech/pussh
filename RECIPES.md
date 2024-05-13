@@ -16,7 +16,7 @@ Print distinct running kernels with their frequency (histogram) :
     pussh -f servers 'uname -a' |sort |uniq -c |sort -rn
 
 Find largest files and folders across several hosts (display in MB), where
-'ionice -c3' is optionnal but recommended :
+'ionice -c3' is optional but recommended :
 
     pussh -f servers ionice -c3 du -Smax / |sort -rn
 
@@ -33,7 +33,7 @@ Or more specific while searching for specific dpkg information :
 
     pussh -f servers dpkg-query -W -f '${Version}' openssh-server 2>/dev/null
 
-Show pending APT updates count, optionnally sorted :
+Show pending APT updates count, optionally sorted :
 
     pussh -f servers -l root sh -c 'apt-get -qq update && apt-get -qsy dist-upgrade |grep -c ^Inst 2>/dev/null' | sort -rn -t: -k2
 
