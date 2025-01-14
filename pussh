@@ -296,5 +296,5 @@ wait
 
 if [ -z "$quiet" ]; then
   dt=$((SECONDS - t0))
-  echo "Total: $nhost hosts(s), $dt second(s)" >&2
+  echo "Total: $nhost host(s), $dt second(s)" >&2
 fi
