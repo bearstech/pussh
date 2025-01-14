@@ -24,7 +24,7 @@ THIS_VERSION=1.4
 
 # Dependencies:
 # - bash (bashisms: arrays, string manipulation)
-# - coreutils thingies (cat, dd, date, stat, basename, dirname)
+# - coreutils thingies (cat, dd, stat)
 # - grep
 # - sed
 # - ssh client (duh)
@@ -121,7 +121,7 @@ if [ -n "$upload" ]; then
   # We'll need the program size to transfer it as "SSH shell session preamble"
   # (see below).
   plen=$(stat -c%s "$pname")
-  ptmp=/tmp/remote-$(basename "$pname")-$$
+  ptmp=/tmp/remote-${pname##*/}-$$
 fi
 
 # Compute sleep period from connection rate (we strive to avoid 'bc')
@@ -213,11 +213,11 @@ output_stamp() {
 output_file() {
   case "$output" in
     *%h*) outfile="${output//\%h/$host}"; per_host=1;;
-       *) outfile="$output"; started=$output_started; export output_started=1;; 
+       *) outfile="$output"; started=$output_started; export output_started=1;;
   esac
 
   # Be cool, create folder(s) if necessary
-  outpath=$(dirname "$outfile")
+  outpath=${outfile%/*}
   if [ "$outpath" != "$outfile" ]; then
     mkdir -p "$outpath"
   fi
@@ -249,12 +249,12 @@ esac
 # exec the remote command thru the login shell, thus args are 'expanded'.
 # (thanks to http://blogs.gentoo.org/agriffis/2006/02/07/requoting_in_bash)
 argv=
-for a in "$@"; do 
+for a in "$@"; do
   qa=$(printf %q "$a")
   argv="$argv $qa"
 done
 
-t0=$(date +%s)
+t0=$SECONDS
 
 for hostspec in $hosts; do
   # $hostspec is '[root@]foo[:port]', extract loginhost/host/port
@@ -293,9 +293,8 @@ for hostspec in $hosts; do
 done
 
 wait
-t1=$(date +%s)
-dt=$((t1 - t0))
 
 if [ -z "$quiet" ]; then
-  echo "Total: $nhost hosts(s), $dt second(s)" >&2
+  dt=$((SECONDS - t0))
+  echo "Total: $nhost host(s), $dt second(s)" >&2
 fi
