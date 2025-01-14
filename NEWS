@@ -1,3 +1,8 @@
+pussh 1.5 - UNRELEASED
+
+    * Get rid of external commands date, dirname & basename with bashisms
+      (thanks @stephanebill)
+
 pussh 1.4 - 2024-08-19
 
     * Use '/usr/bin/env bash' shebang, more portable (thanks @majal)
