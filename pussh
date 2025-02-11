@@ -50,6 +50,8 @@ Options:
   -r, --rate               connect rate in new SSH conn/sec (default: 10)
   -s, --ssh-opt <options>  pass options to SSH, eg -s '-x -p 2022'
   -u, --upload             upload the command file and run its copy remotely
+  -4                       force ssh to use IPv4 addresses only
+  -6                       force ssh to use IPv6 addresses only
 
   --help                   display this help and exit
   --version                output version information and exit
@@ -90,6 +92,8 @@ while [ -n "$parse_opt"  ] ; do
     -r|--rate)      shift; rate="$1";;
     -s|--ssh-opt)   shift; sshopts="$sshopts $1";;
     -u|--upload)    upload=yes;;
+    -4)             sshopts="$sshopts -4";;
+    -6)             sshopts="$sshopts -6";;
 
     --help)         help; exit 0;;
     --version)      version; exit 0;;
