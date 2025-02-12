@@ -2,6 +2,7 @@ pussh 1.5 - UNRELEASED
 
     * Get rid of external commands date, dirname & basename with bashisms
       (thanks @stephanebill)
+    * Add -4/-6 SSH options (thanks @fxlb)
 
 pussh 1.4 - 2024-08-19
 
